@@ -6,6 +6,7 @@ LegacySharedPreferencesPlugin.kt). Read-only; returns {key_without_"flutter."_pr
 import json
 import plistlib
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 LIST_PREFIX = "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBhIGxpc3Qu"         # "This is the prefix for a list."
 JSON_LIST_PREFIX = LIST_PREFIX + "!"
@@ -55,7 +56,7 @@ def read_plist(data: bytes) -> dict:
 
 
 def read(path: str) -> dict:
-    data = open(path, "rb").read()
+    data = Path(path).read_bytes()
     if data.lstrip()[:5] == b"<?xml" and b"<map" in data[:4096]:
         return read_android_xml(data)
     return read_plist(data)  # binary or XML plist

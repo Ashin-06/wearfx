@@ -7,6 +7,7 @@ or missing fields come back as None rather than raising.
 import json
 import os
 import re
+from pathlib import Path
 
 from wearfx import flutterprefs
 
@@ -140,7 +141,7 @@ def scan(root: str) -> dict:
                 result["memories"] += [{**m, "_file": path} for m in memories(prefs)]
             elif f.startswith("wals") and ".json" in f:
                 result["wal_indexes"].append(path)
-                result["recordings"] += [{**w, "_file": path} for w in wals(open(path, "rb").read())]
+                result["recordings"] += [{**w, "_file": path} for w in wals(Path(path).read_bytes())]
             elif (a := audio_file(f)) is not None:
                 result["audio_files"].append({**a, "_path": path, "bytes": os.path.getsize(path)})
     linked = {os.path.basename(r.get("file_path") or "") for r in result["recordings"]}

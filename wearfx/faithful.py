@@ -6,6 +6,7 @@ reviewer can play back. `unsupported` is a lead (STT may have misheard), not pro
 detected.
 """
 import re
+from pathlib import Path
 
 _UNITS = {w: i for i, w in enumerate(
     "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen "
@@ -186,7 +187,7 @@ def load_txt(text: str) -> list[dict]:
 
 
 def load_transcript(path: str) -> list[dict]:
-    text = open(path, encoding="utf-8-sig").read()
+    text = Path(path).read_text(encoding="utf-8-sig")
     return load_srt(text) if path.lower().endswith(".srt") or "-->" in text[:500] else load_txt(text)
 
 
