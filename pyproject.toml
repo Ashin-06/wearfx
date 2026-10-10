@@ -1,0 +1,19 @@
+[project]
+name = "wearfx"
+version = "0.1.0"
+description = "Forensic parser for AI audio wearable apps and an AI-summary integrity checker"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+wearfx = "wearfx.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["wearfx*"]
