@@ -27,3 +27,6 @@
 - Limitless review: https://www.layer3labs.io/gear/reviews/limitless-pendant
 - Pendant roundup: https://www.layer3labs.io/guides/best-ai-wearable-pendants-2026
 - NextPit Plaud review: https://nextpit.com/plaud-notepin-review
+
+## Upstream re-check
+- 10 Oct 2026, through `BasedHardware/omi@7d4da97`: the only change to the storage files since `14fab5f` adds a UI flag `speakerLabelingTipShown` (a one-time tip). No change to conversation, memory, WAL or account formats.
