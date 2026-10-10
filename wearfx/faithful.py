@@ -116,14 +116,19 @@ def extract_claims(summary: str) -> list[dict]:
         n = normalize(m.group(0))
         if n:
             add("number", m.group(0), n)
+    # A capitalised word mid-sentence is a name. One that only ever starts a sentence, bullet or
+    # title ("Budget sync", "Bob sends...") may be an ordinary word: kept as low-confidence "name?".
+    caps = []
     for sentence in re.split(r"(?<=[.!?:;\n])\s*|^\s*[-*•]\s*", summary, flags=re.M):
-        for m in _CAP.finditer(sentence):
-            w = m.group(0).strip("'’")
-            lw = w.lower()
-            if lw in MONTHS or lw in WEEKDAYS:
-                add("date", w, lw)
-            elif lw not in _NOT_NAMES:
-                add("name", w, lw)
+        lead = len(sentence) - len(sentence.lstrip(" \t-*•#>"))
+        caps += [(m.group(0).strip("'’"), m.start() == lead) for m in _CAP.finditer(sentence)]
+    mid = {w.lower() for w, initial in caps if not initial}
+    for w, _ in caps:
+        lw = w.lower()
+        if lw in MONTHS or lw in WEEKDAYS:
+            add("date", w, lw)
+        elif lw not in _NOT_NAMES:
+            add("name" if lw in mid else "name?", w, lw)
     return claims
 
 
@@ -138,7 +143,7 @@ def check(segments: list[dict], summary: str) -> dict:
             body = body.replace(":", "[: ]")  # spoken "ten thirty" normalises to "10 30"
         pat = re.compile(r"(?<![a-z0-9])" + body + r"(?![a-z0-9])")
         hit = next((i for i, t in enumerate(norm_segs) if pat.search(t)), None)
-        if hit is None and c["type"] == "name":  # "Alice said..." is backed by Alice being a speaker
+        if hit is None and c["type"] in ("name", "name?"):  # "Alice said..." is backed by Alice speaking
             hit = next((i for i, t in enumerate(norm_spk) if pat.search(t)), None)
         if hit is None:
             results.append({**c, "status": "unsupported"})
@@ -146,9 +151,11 @@ def check(segments: list[dict], summary: str) -> dict:
             s = segments[hit]
             results.append({**c, "status": "supported", "segment": hit, "speaker": s.get("speaker"),
                             "start": s.get("start"), "context": (s.get("text") or "")[:160]})
-    sup = sum(r["status"] == "supported" for r in results)
-    return {"checkable": len(results), "supported": sup, "unsupported": len(results) - sup,
-            "score": round(sup / len(results), 3) if results else None, "claims": results}
+    scored = [r for r in results if r["type"] != "name?"]  # low-confidence names are listed, not scored
+    sup = sum(r["status"] == "supported" for r in scored)
+    return {"checkable": len(scored), "supported": sup, "unsupported": len(scored) - sup,
+            "low_confidence": len(results) - len(scored),
+            "score": round(sup / len(scored), 3) if scored else None, "claims": results}
 
 
 # ---- transcript loaders ----------------------------------------------------------------------

@@ -85,3 +85,13 @@ def test_scan_directory(tmp_path):
     assert len(r["conversations"]) == 1 and len(r["wal_indexes"]) == 2
     linked = {a["file"]: a["in_wal_index"] for a in r["audio_files"]}
     assert linked == {name: True, "audio_abc_opus_16000_1_fs160_1760009999.bin": False}
+
+
+def test_scan_survives_damaged_prefs(tmp_path):
+    (tmp_path / "shared_prefs").mkdir()
+    (tmp_path / "shared_prefs" / "FlutterSharedPreferences.xml").write_text("<?xml version='1.0'?><map><string")
+    prefdir = tmp_path / "Library" / "Preferences"
+    prefdir.mkdir(parents=True)
+    (prefdir / "broken.plist").write_bytes(b"bplist00garbage")
+    r = omi.scan(str(tmp_path))
+    assert len(r["errors"]) == 2 and r["account"] is None

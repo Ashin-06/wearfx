@@ -35,7 +35,7 @@ def test_supported_claims_point_to_segment():
     assert by["$4,500"]["status"] == "supported" and by["$4,500"]["segment"] == 0
     assert by["3pm"]["status"] == "supported" and by["3pm"]["speaker"] == "Carol"
     assert by["Tuesday"]["type"] == "date" and by["Tuesday"]["status"] == "supported"
-    assert by["Bob"]["type"] == "name" and by["Bob"]["status"] == "supported"
+    assert by["Bob"]["type"] == "name?" and by["Bob"]["status"] == "supported"  # only starts a sentence
     assert by["30%"]["status"] == "supported"
     assert r["unsupported"] == 0 and r["score"] == 1.0
     assert "Agreed" not in by  # sentence-starting verb is not a name
@@ -69,3 +69,15 @@ def test_summary_text_from_omi_conversation():
     conv = {"title": "Budget", "overview": "Agreed.", "action_items": ["Bob sends invoice"], "events": []}
     assert f.summary_text(conv) == "Budget\nAgreed.\n- Bob sends invoice"
     assert f.check([], "")["score"] is None
+
+
+def test_title_words_low_confidence_not_scored():
+    # "Budget" and "Launch" only start a title/bullet: low-confidence, listed but not scored.
+    # "Priya" appears mid-sentence: a real name claim, and the AI put her in the summary unsupported.
+    summary = "Budget sync\n- Launch review\nAgreed $4,500 with Priya."
+    r = f.check([{"text": "we can do four thousand five hundred", "speaker": "SPEAKER_00"}], summary)
+    by = {c["claim"]: c for c in r["claims"]}
+    assert by["Budget"]["type"] == "name?" and by["Launch"]["type"] == "name?"
+    assert by["Priya"]["type"] == "name" and by["Priya"]["status"] == "unsupported"
+    assert r["low_confidence"] == 2 and r["checkable"] == 2  # $4,500 and Priya
+    assert r["score"] == 0.5

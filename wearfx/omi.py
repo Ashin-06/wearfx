@@ -127,12 +127,16 @@ def audio_file(name: str) -> dict | None:
 def scan(root: str) -> dict:
     """Walk an extracted Omi app directory and return every artifact found, with source paths."""
     result = {"prefs_files": [], "account": None, "conversations": [], "memories": [],
-              "wal_indexes": [], "recordings": [], "audio_files": []}
+              "wal_indexes": [], "recordings": [], "audio_files": [], "errors": []}
     for dirpath, _dirs, files in os.walk(root):
         for f in sorted(files):
             path = os.path.join(dirpath, f)
             if f == "FlutterSharedPreferences.xml" or (f.endswith(".plist") and "Preferences" in dirpath):
-                prefs = flutterprefs.read(path)
+                try:
+                    prefs = flutterprefs.read(path)
+                except Exception as e:  # one damaged file must not abort the whole case scan
+                    result["errors"].append({"file": path, "error": f"{type(e).__name__}: {e}"})
+                    continue
                 if not any(k in prefs for k in ("uid", "cachedConversations", "btDevice", "email")):
                     continue  # some other app's plist
                 result["prefs_files"].append(path)

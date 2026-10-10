@@ -50,7 +50,7 @@ def build(scan: dict) -> dict:
     for e in events:
         e["time_utc"] = datetime.fromtimestamp(e["ts"], timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if e["ts"] else None
     return {"account": scan["account"], "prefs_files": scan["prefs_files"], "wal_indexes": scan["wal_indexes"],
-            "integrity": integrity, "events": events}
+            "errors": scan.get("errors", []), "integrity": integrity, "events": events}
 
 
 def to_json(rep: dict) -> str:
@@ -71,6 +71,7 @@ def to_html(rep: dict, title: str = "WearFX case report") -> str:
     acc = rep["account"] or {}
     acc_rows = "".join(f"<tr><th>{e(k)}</th><td>{e(v)}</td></tr>" for k, v in acc.items() if k != "webhooks")
     hooks = "".join(f"<li>{e(k)}: {e(v)}</li>" for k, v in (acc.get("webhooks") or {}).items()) or "<li>none</li>"
+    errs = "".join(f"<li>{e(x['file'])}: {e(x['error'])}</li>" for x in rep.get("errors", []))
     integ = "".join(f"<tr><td>{e(i['title'])}</td><td>{e(i['score'])}</td><td>{e(', '.join(i['unsupported']))}</td></tr>"
                     for i in rep["integrity"])
     ev = "".join(f"<tr><td>{e(x['time_utc'])}</td><td>{e(x['kind'])}</td><td>{e(x['detail'])}</td>"
@@ -82,7 +83,8 @@ def to_html(rep: dict, title: str = "WearFX case report") -> str:
             "padding:4px 8px;text-align:left;vertical-align:top}th{background:#f0f0f0}</style>"
             f"<h1>{e(title)}</h1><h2>Account and device</h2><table>{acc_rows}</table>"
             f"<h2>Webhook destinations</h2><ul>{hooks}</ul>"
-            "<h2>Summary integrity</h2><p>Unsupported = key token not found in the transcript. "
+            + (f"<h2>Unreadable files</h2><ul>{errs}</ul>" if rep.get("errors") else "")
+            + "<h2>Summary integrity</h2><p>Unsupported = key token not found in the transcript. "
             "A lead to check against the audio, not proof of fabrication.</p>"
             f"<table><tr><th>Conversation</th><th>Score</th><th>Unsupported claims</th></tr>{integ}</table>"
             f"<h2>Timeline ({len(rep['events'])} events)</h2><table><tr><th>UTC</th><th>Kind</th>"

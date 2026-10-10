@@ -39,3 +39,11 @@ def test_renderers_escape(tmp_path):
     assert "&lt;script&gt;" in h and "<script>x" not in h
     assert report.to_csv(rep).startswith("time_utc,kind,detail")
     assert json.loads(report.to_json(rep))["integrity"]
+
+
+def test_errors_reported(tmp_path):
+    rep = _case(tmp_path)
+    assert rep["errors"] == []
+    rep["errors"] = [{"file": "x.plist", "error": "InvalidFileException: bad <data>"}]
+    h = report.to_html(rep)
+    assert "Unreadable files" in h and "bad &lt;data&gt;" in h

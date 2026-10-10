@@ -1,6 +1,6 @@
 # WearFX: Forensics for AI Audio Wearables
 
-**Project 2 of 5** · Status: research complete, tool in progress, lab work not started
+**Project 2 of 5** · Status: research complete, tool built and tested (17 tests), lab work not started
 Research cut-off: 10 Oct 2026 (Omi `BasedHardware/omi@14fab5f`)
 
 ## What this is
@@ -51,7 +51,53 @@ WearFX provides:
 │   ├── 07-experiment-plan.md        hypotheses H1-H9, lab tasks L1-L9
 │   ├── 08-paper-outline.md
 │   └── sources.md
+├── wearfx/                          Python package, standard library only, read-only
+│   ├── flutterprefs.py              Flutter shared_preferences: Android XML + iOS plist, list/double encodings
+│   ├── omi.py                       Omi: account, devices, webhooks, conversations, memories, WAL index, audio
+│   ├── faithful.py                  AI summary vs transcript, claim by claim; SRT/TXT/Omi loaders
+│   ├── report.py                    merged timeline + integrity table; JSON/CSV/HTML
+│   └── cli.py                       `wearfx` command
+├── tests/                           pytest suite (17 tests)
+└── pyproject.toml
 ```
+
+## Tool
+
+```bash
+python -m venv .venv && .venv/Scripts/pip install -e .[test]   # Linux/macOS: .venv/bin/pip
+pytest -q
+```
+
+Every command only reads its inputs. Run it on a hash-verified copy of the extraction.
+
+```bash
+wearfx prefs     FlutterSharedPreferences.xml                  # decode any Flutter prefs file
+wearfx omi       extracted/com.friend.ios/                     # every Omi artifact found, with source paths
+wearfx check     --transcript call.srt --summary summary.md    # Plaud/any export: claim-by-claim integrity
+wearfx check-omi extracted/com.friend.ios/                     # integrity of every cached Omi conversation
+wearfx report    extracted/com.friend.ios/ --format html > case.html
+```
+
+How to read an integrity result:
+- `supported` gives the transcript segment, speaker and start time, so you can play it back.
+- `unsupported` means the claim's key word or number is not in the transcript. That is a lead (the speech-to-text may have misheard), not proof of fabrication.
+- `name?` is a capitalised word that only starts a sentence or title. It might be an ordinary word, so it is listed and checked but not counted in the score.
+- Omissions (something important the summary left out) are not detected.
+
+| Feature | Checked against | Status |
+|---|---|---|
+| Flutter prefs (Android XML, iOS binary plist, list/double/BigInteger encodings) | encodings from `flutter/packages` source | ✅ tests |
+| Omi account, devices, webhooks, conversations, memories | field names from `BasedHardware/omi@14fab5f` | ✅ tests; ⏳ real extraction is lab task L2 |
+| WAL index incl. `.corrupt-*` copies, audio names (incl. Limitless), orphan audio | `wal.dart`, `wal_file_manager.dart` | ✅ tests |
+| Integrity checker: numbers, money, %, times, dates, names, quotes; spoken-number grammar | seeded hallucinations, regressions ("ten thirty" ≠ 40) | ✅ tests; ⏳ recall on real summaries is lab task L8 |
+| Report: timeline, integrity, unreadable files; HTML escaped | synthetic case | ✅ tests |
+
+### Known gaps
+- **Plaud, Bee, Limitless app data** are closed and not parsed yet (lab tasks L5, L6). Plaud **exports** (SRT/TXT) already work with `check`.
+- **Omi device storage** (SD card, SPI flash) not parsed (lab task L4).
+- **Audio** is listed and linked, not decoded or compared with the transcript (lab task L7).
+- **Older Android list encoding** (Java-serialised) is kept raw, not decoded.
+- No real-device validation yet: all tests use data built from the apps' own source.
 
 ## Ethics in one line
 Lab recordings use consenting participants or scripted text-to-speech personas only, on project-owned devices and accounts. Details in [research/06](research/06-legal-ethics.md).
