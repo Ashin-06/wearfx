@@ -1,6 +1,6 @@
 # WearFX: Forensics for AI Audio Wearables
 
-**Project 2 of 5** · Status: research complete, tool built and tested (17 tests), lab work not started
+**Project 2 of 5** · Status: research complete, tool and analysis API built and tested (30 tests), lab work not started
 Research cut-off: 10 Oct 2026 (Omi `BasedHardware/omi@14fab5f`)
 
 ## What this is
@@ -51,20 +51,23 @@ WearFX provides:
 │   ├── 07-experiment-plan.md        hypotheses H1-H9, lab tasks L1-L9
 │   ├── 08-paper-outline.md
 │   └── sources.md
-├── wearfx/                          Python package, standard library only, read-only
+├── wearfx/                          Python package; parsers are read-only and use only the standard library and defusedxml
 │   ├── flutterprefs.py              Flutter shared_preferences: Android XML + iOS plist, list/double encodings
 │   ├── omi.py                       Omi: account, devices, webhooks, conversations, memories, WAL index, audio
 │   ├── faithful.py                  AI summary vs transcript, claim by claim; SRT/TXT/Omi loaders
 │   ├── report.py                    merged timeline + integrity table; JSON/CSV/HTML
+│   ├── api.py                       analysis API with a custody log
+│   ├── ops.py, db.py                settings, API keys, limits, logs, metrics; database and migrations
 │   └── cli.py                       `wearfx` command
-├── tests/                           pytest suite (17 tests)
+├── docs/                            threat model, runbook
+├── tests/                           pytest suite (30 tests)
 └── pyproject.toml
 ```
 
 ## Tool
 
 ```bash
-python -m venv .venv && .venv/Scripts/pip install -e .[test]   # Linux/macOS: .venv/bin/pip
+python -m venv .venv && .venv/Scripts/pip install -r requirements-dev.lock -e .   # Linux/macOS: .venv/bin/pip
 pytest -q
 ```
 
@@ -99,5 +102,37 @@ How to read an integrity result:
 - **Older Android list encoding** (Java-serialised) is kept raw, not decoded.
 - No real-device validation yet: all tests use data built from the apps' own source.
 
+## Analysis API
+
+`wearfx serve` (or the container image, `docker build -t wearfx .`, see [docs/runbook.md](docs/runbook.md)) puts the checker and the case report behind an API.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /v1/check` | an AI summary against a transcript (SRT or text), claim by claim |
+| `POST /v1/report?format=json\|csv\|html` | the case report for a zipped Omi extraction sent as the body |
+| `GET /v1/analyses`, `/v1/analyses/{id}` | the custody log: who submitted which input (by SHA-256), when, and the counts found |
+| `GET /healthz`, `/readyz`, `/metrics` | health, readiness and Prometheus metrics |
+
+Evidence is analysed in a temporary directory and not stored. Zips with absolute paths, `..`, symlinks or bomb-like sizes are refused. API keys carry a role: `examiner`, `viewer`, `monitor`. Create one with `python -m wearfx.ops keygen`.
+
+| Variable | Purpose |
+|---|---|
+| `WEARFX_ENV=production` | refuse to start without hashed API keys and a database |
+| `WEARFX_API_KEYS` / `WEARFX_KEYS_FILE` | hashed API keys with roles |
+| `WEARFX_DATABASE_URL` | the custody log: `sqlite:///...` or `postgresql://...` |
+
+## Limitations
+
+- No real-device validation yet; every test uses data built from the apps' own source.
+- The integrity checker finds unsupported claims, not omissions, and its recall on real summaries is unmeasured (lab task L8).
+- The custody log records input hashes but is not signed or hash-chained.
+- The methods have not been tested in court, and the code has not had an independent security review.
+
+See [SECURITY.md](SECURITY.md) and [docs/threat-model.md](docs/threat-model.md).
+
 ## Ethics in one line
 Lab recordings use consenting participants or scripted text-to-speech personas only, on project-owned devices and accounts. Details in [research/06](research/06-legal-ethics.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
