@@ -67,7 +67,7 @@ WearFX provides:
 ## Tool
 
 ```bash
-python -m venv .venv && .venv/Scripts/pip install -r requirements-dev.lock -e .   # Linux/macOS: .venv/bin/pip
+python -m venv .venv && .venv/Scripts/python -m pip install -r requirements-dev.lock -e .   # Linux/macOS: .venv/bin/python
 pytest -q
 ```
 
