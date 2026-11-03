@@ -33,3 +33,14 @@ def test_ios_plist_binary(tmp_path):
                                  fmt=plistlib.FMT_BINARY))
     d = fp.read(str(p))
     assert d == {"uid": "u1", "cachedConversations": ["{}"], "NSOther": 1}
+
+
+def test_hostile_xml_is_refused(tmp_path):
+    import defusedxml
+    import pytest
+
+    bomb = tmp_path / "FlutterSharedPreferences.xml"
+    bomb.write_text('<?xml version="1.0"?><!DOCTYPE m [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;">]>'
+                    '<map><string name="flutter.x">&b;</string></map>')
+    with pytest.raises(defusedxml.DefusedXmlException):
+        fp.read(str(bomb))
