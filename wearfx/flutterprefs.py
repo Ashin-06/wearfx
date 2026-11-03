@@ -5,8 +5,9 @@ LegacySharedPreferencesPlugin.kt). Read-only; returns {key_without_"flutter."_pr
 """
 import json
 import plistlib
-import defusedxml.ElementTree as ET  # a seized phone's file is hostile input: no entity expansion, no DTDs
 from pathlib import Path
+
+import defusedxml.ElementTree as ET  # a seized phone's file is hostile input: no entity expansion, no DTDs
 
 LIST_PREFIX = "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBhIGxpc3Qu"         # "This is the prefix for a list."
 JSON_LIST_PREFIX = LIST_PREFIX + "!"

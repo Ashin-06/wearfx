@@ -39,5 +39,5 @@ pythonpath = [".", "tests"]
 source = ["wearfx"]
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "B"]
+select = ["E4", "E7", "E9", "F", "B", "I001"]
 ignore = ["B008", "B905", "E731"]  # Depends() defaults are FastAPI's idiom; zip(strict=) and lambdas are style
