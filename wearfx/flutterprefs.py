@@ -19,7 +19,7 @@ def _decode_string(v: str):
     if v.startswith(JSON_LIST_PREFIX):
         return json.loads(v[len(JSON_LIST_PREFIX):])
     if v.startswith(LIST_PREFIX):
-        # ponytail: older plugin versions Java-serialised the list; kept raw, decode if a case needs it
+        # Older plugin versions Java-serialised the list; kept raw, decode if a case needs it
         return {"_legacy_java_list_base64": v[len(LIST_PREFIX):]}
     if v.startswith(DOUBLE_PREFIX):
         return float(v[len(DOUBLE_PREFIX):])
